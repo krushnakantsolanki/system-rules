@@ -1,11 +1,20 @@
 language: java
+before_install:
+  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
 install: ./mvnw install -DskipTests=true -Dgpg.skip=true
 addons:
   apt:
     packages:
       - openjdk-6-jdk
-jdk:
-  - oraclejdk9
-  - oraclejdk8
-  - openjdk7
-  - openjdk6
+matrix:
+  include:
+    - env: JDK_RELEASE='OpenJDK 6'
+      jdk: openjdk6
+    - env: JDK_RELEASE='OpenJDK 7'
+      jdk: openjdk7
+    - env: JDK_RELEASE='OracleJDK 8'
+      jdk: oraclejdk8
+    - env: JDK_RELEASE='OracleJDK 9'
+      jdk: oraclejdk9
+    - env: JDK_RELEASE='OracleJDK 10'
+      install: . ./install-jdk.sh -F 10 -L BCL
