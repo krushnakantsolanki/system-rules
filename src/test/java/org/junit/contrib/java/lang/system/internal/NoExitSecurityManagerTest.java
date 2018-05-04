@@ -1,14 +1,19 @@
 package org.junit.contrib.java.lang.system.internal;
 
 import static com.github.stefanbirkner.fishbowl.Fishbowl.exceptionThrownBy;
+import static java.lang.reflect.Modifier.isPrivate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.FileDescriptor;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.security.Permission;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import com.github.stefanbirkner.fishbowl.Statement;
 import org.junit.Rule;
@@ -475,5 +480,35 @@ public class NoExitSecurityManagerTest {
 		assertThat(exception)
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("checkExit(int) has not been called.");
+	}
+
+	@Test
+	public void all_methods_of_SecurityManager_are_overridden() {
+		List<Method> methodsThatMustBeOverridden = nonPrivateMethods(
+			SecurityManager.class);
+		List<Method> overriddenMethods = nonPrivateMethods(
+			NoExitSecurityManager.class);
+		List<Method> notOverriddenMethods = new ArrayList<Method>();
+		for (Method method: methodsThatMustBeOverridden)
+			if (isNotOverridden(overriddenMethods, method))
+				notOverriddenMethods.add(method);
+		assertThat(notOverriddenMethods).isEmpty();
+	}
+
+	private List<Method> nonPrivateMethods(Class<?> klass) {
+		List<Method> nonPrivateMethods =  new ArrayList<Method>();
+		for (Method method: klass.getDeclaredMethods())
+			if (!isPrivate(method.getModifiers()))
+				nonPrivateMethods.add(method);
+		return nonPrivateMethods;
+	}
+
+	private boolean isNotOverridden(List<Method> overriddenMethods, Method method) {
+		for (Method override: overriddenMethods)
+			if (override.getName().equals(method.getName())
+				&& override.getGenericReturnType().equals(method.getGenericReturnType())
+				&& Arrays.equals(override.getGenericParameterTypes(), method.getGenericParameterTypes()))
+				return false;
+		return true;
 	}
 }
